@@ -17,7 +17,9 @@ import {
   Check,
   Building2,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useSeettu } from '../../context/SeettuContext';
 import { formatIndianCurrency } from '../../utils/formatCurrency';
@@ -25,16 +27,26 @@ import { printPDFReport } from '../../utils/exportUtils';
 import logoImg from '../../assets/logo.png';
 
 export default function MemberDashboard() {
-  const { activeMember, logoutMember, paymentsList, markPaymentAsPaid, resetMemberPasswordWithOTP, sendForgotPasswordOTP } = useSeettu();
+  const { 
+    activeMember, 
+    logoutMember, 
+    paymentsList, 
+    markPaymentAsPaid, 
+    changeMemberPassword 
+  } = useSeettu();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'schemes' | 'history' | 'pay' | 'security'
   const [selectedPayItem, setSelectedPayItem] = useState(null);
   const [paySuccessMsg, setPaySuccessMsg] = useState('');
   
-  // Change Password State
-  const [passData, setPassData] = useState({ currentPass: '', newPass: '', confirmPass: '' });
-  const [passNotice, setPassNotice] = useState('');
+  // Change Password Form State with Eye Toggle
+  const [passData, setPassData] = useState({ oldPass: '', newPass: '', confirmPass: '' });
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
 
   if (!activeMember) {
     return (
@@ -98,6 +110,37 @@ export default function MemberDashboard() {
     setPaySuccessMsg('Payment Successful! Receipt issued & sent to your Email.');
     setSelectedPayItem(null);
     setTimeout(() => setPaySuccessMsg(''), 4000);
+  };
+
+  // Handle Password Change with Old Password Validation
+  const handleChangePasswordSubmit = (e) => {
+    e.preventDefault();
+    setPassError('');
+    setPassSuccess('');
+
+    if (!passData.oldPass) {
+      setPassError('Please enter your current (old) password.');
+      return;
+    }
+
+    if (!passData.newPass) {
+      setPassError('Please enter a new password.');
+      return;
+    }
+
+    if (passData.newPass !== passData.confirmPass) {
+      setPassError('New password and confirm password do not match.');
+      return;
+    }
+
+    const res = changeMemberPassword(activeMember.id, passData.oldPass, passData.newPass);
+    if (!res.success) {
+      setPassError(res.message);
+    } else {
+      setPassSuccess(res.message);
+      setPassData({ oldPass: '', newPass: '', confirmPass: '' });
+      setTimeout(() => setPassSuccess(''), 4000);
+    }
   };
 
   return (
@@ -261,7 +304,7 @@ export default function MemberDashboard() {
                 : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <Lock className="w-4 h-4" /> Account Security
+            <Lock className="w-4 h-4" /> Account Security & Password
           </button>
         </div>
 
@@ -423,14 +466,32 @@ export default function MemberDashboard() {
           </div>
         )}
 
-        {/* 4. Security & Account Tab */}
+        {/* 4. Security & Account Tab (With Old Password Validation) */}
         {activeTab === 'security' && (
           <div className="glass-card p-6 sm:p-8 rounded-[2.5rem] border border-slate-200 bg-white shadow-md space-y-6 max-w-xl mx-auto">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Lock className="w-5 h-5 text-[#1E3A8A]" /> Change Member Portal Password
-            </h2>
+            <div className="text-center space-y-1 pb-2 border-b border-slate-100">
+              <div className="w-12 h-12 rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] flex items-center justify-center mx-auto mb-2">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">Change Member Password</h2>
+              <p className="text-xs text-slate-500 font-medium">Enter your current old password to set a new password</p>
+            </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); setPassNotice('Password changed successfully.'); setTimeout(() => setPassNotice(''), 3000); }} className="space-y-4">
+            {passError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{passError}</span>
+              </div>
+            )}
+
+            {passSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                <span>{passSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Registered Mobile / Email</label>
                 <input 
@@ -441,35 +502,73 @@ export default function MemberDashboard() {
                 />
               </div>
 
+              {/* Old / Current Password Field */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Current (Old) Password</label>
+                <div className="relative">
+                  <input 
+                    type={showOldPass ? "text" : "password"}
+                    required
+                    placeholder="Enter current old password"
+                    value={passData.oldPass}
+                    onChange={(e) => setPassData({ ...passData, oldPass: e.target.value })}
+                    className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPass(!showOldPass)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-1"
+                  >
+                    {showOldPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* New Password Field */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">New Password</label>
-                <input 
-                  type="password"
-                  placeholder="Enter new password"
-                  value={passData.newPass}
-                  onChange={(e) => setPassData({ ...passData, newPass: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
-                />
+                <div className="relative">
+                  <input 
+                    type={showNewPass ? "text" : "password"}
+                    required
+                    placeholder="Enter new password"
+                    value={passData.newPass}
+                    onChange={(e) => setPassData({ ...passData, newPass: e.target.value })}
+                    className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-1"
+                  >
+                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
+              {/* Confirm New Password Field */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Confirm New Password</label>
-                <input 
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={passData.confirmPass}
-                  onChange={(e) => setPassData({ ...passData, confirmPass: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
-                />
+                <div className="relative">
+                  <input 
+                    type={showConfirmPass ? "text" : "password"}
+                    required
+                    placeholder="Confirm new password"
+                    value={passData.confirmPass}
+                    onChange={(e) => setPassData({ ...passData, confirmPass: e.target.value })}
+                    className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors p-1"
+                  >
+                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
-              {passNotice && (
-                <p className="text-xs font-bold text-emerald-700 bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-center">
-                  {passNotice}
-                </p>
-              )}
-
-              <button type="submit" className="w-full btn-primary py-3 text-xs font-bold">
+              <button type="submit" className="w-full btn-primary py-3 text-xs font-bold shadow-md">
                 Update Password
               </button>
             </form>

@@ -207,6 +207,36 @@ export function SeettuProvider({ children }) {
     }).catch(err => console.error('MySQL member delete error:', err));
   };
 
+  // Change Member Password with Current Password Validation
+  const changeMemberPassword = (memberId, oldPassword, newPassword) => {
+    const member = membersList.find(m => m.id === memberId);
+    if (!member) {
+      return { success: false, message: "Member account not found." };
+    }
+
+    if (member.password && member.password !== oldPassword) {
+      return { success: false, message: "Incorrect current password entered. Please enter your correct old password." };
+    }
+
+    const updatedMember = { ...member, password: newPassword };
+
+    setMembersList(prev => prev.map(m => m.id === memberId ? updatedMember : m));
+
+    if (activeMember && (activeMember.id === memberId || activeMember.mobile === member.mobile)) {
+      setActiveMember(updatedMember);
+      localStorage.setItem('jsa_active_member', JSON.stringify(updatedMember));
+    }
+
+    // Persist to MySQL database
+    fetch(`${API_BASE}/members/${memberId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedMember)
+    }).catch(err => console.error('MySQL password change error:', err));
+
+    return { success: true, message: "Password updated successfully!" };
+  };
+
   // Forgot Password OTP Flow
   const sendForgotPasswordOTP = (emailOrMobile) => {
     const member = membersList.find(
@@ -438,6 +468,7 @@ export function SeettuProvider({ children }) {
       setActiveMember,
       loginMember,
       logoutMember,
+      changeMemberPassword,
       refreshDatabaseData
     }}>
       {children}
