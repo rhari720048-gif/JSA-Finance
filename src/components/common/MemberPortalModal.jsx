@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   User, 
@@ -19,6 +20,7 @@ import { formatIndianCurrency } from '../../utils/formatCurrency';
 import logoImg from '../../assets/logo.png';
 
 export default function MemberPortalModal({ isOpen, onClose }) {
+  const navigate = useNavigate();
   const { 
     membersList, 
     activeMember, 
@@ -52,7 +54,11 @@ export default function MemberPortalModal({ isOpen, onClose }) {
     if (!res.success) {
       setErrorMessage(res.message);
     } else {
-      setSuccessMessage(`Welcome back, ${res.member.name}!`);
+      setSuccessMessage(`Welcome back, ${res.member.name}! Redirecting to your dashboard...`);
+      setTimeout(() => {
+        onClose();
+        navigate('/member/dashboard');
+      }, 500);
     }
   };
 

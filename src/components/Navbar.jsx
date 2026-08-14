@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Menu, X, UserCheck, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, X, UserCheck } from 'lucide-react';
 import { useSeettu } from '../context/SeettuContext';
 import MemberPortalModal from './common/MemberPortalModal';
 import logoImg from '../assets/logo.png';
@@ -7,7 +8,7 @@ import logoImg from '../assets/logo.png';
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
-  const { activeMember, logoutMember } = useSeettu();
+  const { activeMember } = useSeettu();
 
   const links = [
     { name: 'Home', href: '#home' },
@@ -37,14 +38,14 @@ export default function Navbar() {
                 </a>
               ))}
 
-              {/* Only Member Login Button is shown on Website */}
+              {/* Only Member Login / Dashboard Button is shown on Website */}
               {activeMember ? (
-                <button 
-                  onClick={() => setIsMemberModalOpen(true)}
-                  className="btn-primary py-2 px-4 text-xs font-bold shadow-xs flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800"
+                <Link 
+                  to="/member/dashboard"
+                  className="btn-primary py-2.5 px-5 text-xs font-bold shadow-xs flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800"
                 >
-                  <UserCheck className="w-4 h-4" /> {activeMember.name} (My Ledger)
-                </button>
+                  <UserCheck className="w-4 h-4" /> {activeMember.name} (My Dashboard)
+                </Link>
               ) : (
                 <button 
                   onClick={() => setIsMemberModalOpen(true)}
@@ -56,47 +57,68 @@ export default function Navbar() {
             </div>
 
             <div className="md:hidden flex items-center gap-2">
-              <button 
-                onClick={() => setIsMemberModalOpen(true)}
-                className="px-3 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-bold flex items-center gap-1"
-              >
-                <UserCheck className="w-3.5 h-3.5" /> Member Login
-              </button>
+              {activeMember ? (
+                <Link 
+                  to="/member/dashboard"
+                  className="btn-primary py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 bg-emerald-700"
+                >
+                  <UserCheck className="w-3.5 h-3.5" /> Dashboard
+                </Link>
+              ) : (
+                <button 
+                  onClick={() => setIsMemberModalOpen(true)}
+                  className="btn-primary py-1.5 px-3 text-xs font-bold flex items-center gap-1.5"
+                >
+                  <UserCheck className="w-3.5 h-3.5" /> Login
+                </button>
+              )}
 
               <button 
                 onClick={() => setIsOpen(!isOpen)}
-                className="text-slate-700 hover:text-[#1E3A8A] focus:outline-none p-2 rounded-lg bg-slate-100 border border-slate-200"
+                className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
               >
-                {isOpen ? <X className="h-6 w-6 text-[#1E3A8A]" /> : <Menu className="h-6 w-6 text-slate-700" />}
+                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu dropdown */}
         {isOpen && (
-          <div className="md:hidden bg-white mx-4 mb-4 border border-slate-200 p-4 shadow-xl rounded-2xl">
-            <div className="space-y-1">
-              {links.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 hover:text-[#1E3A8A] hover:bg-slate-100 transition-colors"
-                >
-                  {link.name}
-                </a>
-              ))}
-            </div>
+          <div className="md:hidden border-b border-slate-200 bg-white/95 backdrop-blur-xl px-4 pt-2 pb-6 space-y-3">
+            {links.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="block text-slate-700 hover:text-[#1E3A8A] font-bold text-base py-2 transition-colors"
+              >
+                {link.name}
+              </a>
+            ))}
+
+            {activeMember ? (
+              <Link 
+                to="/member/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="w-full btn-primary py-3 text-xs font-bold text-center block bg-emerald-700"
+              >
+                Go to My Member Dashboard ({activeMember.name})
+              </Link>
+            ) : (
+              <button 
+                onClick={() => { setIsOpen(false); setIsMemberModalOpen(true); }}
+                className="w-full btn-primary py-3 text-xs font-bold text-center block"
+              >
+                Member Portal Login
+              </button>
+            )}
           </div>
         )}
       </nav>
 
-      {/* Interactive Member Login & Portal Modal */}
-      <MemberPortalModal 
-        isOpen={isMemberModalOpen}
-        onClose={() => setIsMemberModalOpen(false)}
-      />
+      {/* Interactive Member Portal Modal */}
+      <MemberPortalModal isOpen={isMemberModalOpen} onClose={() => setIsMemberModalOpen(false)} />
     </>
   );
 }

@@ -28,7 +28,8 @@ import AdminMembers from './components/admin/AdminMembers';
 import AdminPayments from './components/admin/AdminPayments';
 import AdminReports from './components/admin/AdminReports';
 import AdminSettings from './components/admin/AdminSettings';
-import ComingSoonPage from './components/admin/ComingSoonPage';
+// Member Portal Dashboard Component
+import MemberDashboard from './components/member/MemberDashboard';
 
 function LandingPage() {
   return (
@@ -59,6 +60,9 @@ function App() {
       <Routes>
         {/* Public Landing Page */}
         <Route path="/" element={<LandingPage />} />
+
+        {/* Dedicated Member Portal Dashboard Route */}
+        <Route path="/member/dashboard" element={<MemberDashboard />} />
 
         {/* Admin Panel Routes */}
         <Route path="/admin" element={<AdminLayout />}>

@@ -33,8 +33,15 @@ export function SeettuProvider({ children }) {
     refreshDatabaseData();
   }, []);
 
-  // Active Member session state for public website member login portal
-  const [activeMember, setActiveMember] = useState(null);
+  // Persistent Active Member session state for public website member login portal
+  const [activeMember, setActiveMember] = useState(() => {
+    try {
+      const saved = localStorage.getItem('jsa_active_member');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   const loginMember = (identifier, password) => {
     const cleanId = identifier ? identifier.trim().toLowerCase() : '';
@@ -51,11 +58,13 @@ export function SeettuProvider({ children }) {
     }
 
     setActiveMember(member);
+    localStorage.setItem('jsa_active_member', JSON.stringify(member));
     return { success: true, member };
   };
 
   const logoutMember = () => {
     setActiveMember(null);
+    localStorage.removeItem('jsa_active_member');
   };
 
   // Active Receipt Modal Popup state for automatic Receipt & Email notification display
