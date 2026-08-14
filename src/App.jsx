@@ -28,6 +28,8 @@ import AdminMembers from './components/admin/AdminMembers';
 import AdminPayments from './components/admin/AdminPayments';
 import AdminReports from './components/admin/AdminReports';
 import AdminSettings from './components/admin/AdminSettings';
+import ComingSoonPage from './components/admin/ComingSoonPage';
+
 // Member Portal Dashboard Component
 import MemberDashboard from './components/member/MemberDashboard';
 
