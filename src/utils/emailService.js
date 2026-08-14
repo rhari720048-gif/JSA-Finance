@@ -4,7 +4,9 @@
  * Google App Password: qxqq gfke nwxd xdvk
  */
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? '/api'
+  : 'http://localhost:5000/api';
 
 export async function sendRealWelcomeEmail({ toEmail, memberName, memberId, mobile, password }) {
   try {

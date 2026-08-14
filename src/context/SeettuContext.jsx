@@ -3,6 +3,10 @@ import { formatIndianCurrency } from '../utils/formatCurrency';
 import { sendRealOTPEmail, sendRealReceiptEmail, sendRealWelcomeEmail, sendRealChitEnrollmentEmail } from '../utils/emailService';
 import { sendAppNotification } from '../utils/notificationService';
 
+const API_BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? '/api'
+  : 'http://localhost:5000/api';
+
 const SeettuContext = createContext();
 
 export function SeettuProvider({ children }) {
@@ -13,7 +17,7 @@ export function SeettuProvider({ children }) {
 
   // Load initial data from TiDB Cloud MySQL Database
   const refreshDatabaseData = () => {
-    fetch('http://localhost:5000/api/bootstrap-data')
+    fetch(`${API_BASE}/bootstrap-data`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -65,7 +69,7 @@ export function SeettuProvider({ children }) {
     setSeettuList(prev => [newScheme, ...prev]);
 
     // Persist to TiDB Cloud MySQL
-    fetch('http://localhost:5000/api/seettu', {
+    fetch(`${API_BASE}/seettu`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newScheme)
@@ -97,7 +101,7 @@ export function SeettuProvider({ children }) {
     setMembersList(prev => [formattedMember, ...prev]);
 
     // Persist to TiDB Cloud MySQL
-    fetch('http://localhost:5000/api/members', {
+    fetch(`${API_BASE}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formattedMember)
@@ -179,7 +183,7 @@ export function SeettuProvider({ children }) {
 
   const updateMember = (updatedMember) => {
     setMembersList(prev => prev.map(item => item.id === updatedMember.id ? updatedMember : item));
-    fetch(`http://localhost:5000/api/members/${updatedMember.id}`, {
+    fetch(`${API_BASE}/members/${updatedMember.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedMember)
@@ -189,7 +193,7 @@ export function SeettuProvider({ children }) {
   const deleteMember = (memberId) => {
     setMembersList(prev => prev.filter(item => item.id !== memberId));
     setPaymentsList(prev => prev.filter(p => p.memberId !== memberId));
-    fetch(`http://localhost:5000/api/members/${memberId}`, {
+    fetch(`${API_BASE}/members/${memberId}`, {
       method: 'DELETE'
     }).catch(err => console.error('MySQL member delete error:', err));
   };
@@ -271,7 +275,7 @@ export function SeettuProvider({ children }) {
     if (!targetPayment) return;
 
     // Persist Payment Paid status to TiDB Cloud MySQL
-    fetch('http://localhost:5000/api/payments/pay', {
+    fetch(`${API_BASE}/payments/pay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentId, paymentMode })

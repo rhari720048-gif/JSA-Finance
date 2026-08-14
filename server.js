@@ -437,6 +437,10 @@ app.post('/api/send-reminder', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 JSA Email & MySQL Backend Server running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 JSA Email & MySQL Backend Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
