@@ -36,7 +36,7 @@ export default function MemberDashboard() {
   } = useSeettu();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'schemes' | 'history' | 'pay' | 'security'
+  const [activeTab, setActiveTab] = useState('history'); // Default view: Payment History & PDF Receipts!
   const [selectedPayItem, setSelectedPayItem] = useState(null);
   const [paySuccessMsg, setPaySuccessMsg] = useState('');
   
@@ -264,6 +264,17 @@ export default function MemberDashboard() {
         {/* Dashboard Navigation Tabs */}
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
           <button
+            onClick={() => setActiveTab('history')}
+            className={`px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+              activeTab === 'history'
+                ? 'bg-[#1E3A8A] text-white shadow-md'
+                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Download className="w-4 h-4" /> Payment History & PDF Receipts
+          </button>
+
+          <button
             onClick={() => setActiveTab('overview')}
             className={`px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'overview'
@@ -272,17 +283,6 @@ export default function MemberDashboard() {
             }`}
           >
             <Briefcase className="w-4 h-4" /> My Schemes
-          </button>
-
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'history'
-                ? 'bg-[#1E3A8A] text-white shadow-md'
-                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Download className="w-4 h-4" /> Payment History & Receipts
           </button>
 
           <button
