@@ -274,15 +274,28 @@ export function SeettuProvider({ children }) {
       return { success: false, message: "Invalid OTP entered. Please try again." };
     }
 
-    setMembersList(prev => prev.map(m => {
-      if (m.id === otpState.memberId) {
-        return { ...m, password: newPassword };
+    const memberToUpdate = membersList.find(m => m.id === otpState.memberId || m.email?.toLowerCase() === otpState.email?.toLowerCase());
+
+    if (memberToUpdate) {
+      const updatedMember = { ...memberToUpdate, password: newPassword };
+
+      setMembersList(prev => prev.map(m => (m.id === memberToUpdate.id || m.mobile === memberToUpdate.mobile) ? updatedMember : m));
+
+      if (activeMember && (activeMember.id === memberToUpdate.id || activeMember.mobile === memberToUpdate.mobile)) {
+        setActiveMember(updatedMember);
+        localStorage.setItem('jsa_active_member', JSON.stringify(updatedMember));
       }
-      return m;
-    }));
+
+      // Persist new password to TiDB Cloud MySQL database immediately!
+      fetch(`${API_BASE}/members/${memberToUpdate.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMember)
+      }).catch(err => console.error('MySQL OTP reset password error:', err));
+    }
 
     setOtpState(null);
-    return { success: true, message: "Password reset successfully! You can now log in with your new password." };
+    return { success: true, message: "Password reset successfully! Logging in now requires your new password." };
   };
 
   // Central Payment Ledger Sync Methods + Auto Receipt & Email Notification Dispatch

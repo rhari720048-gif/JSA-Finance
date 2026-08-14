@@ -34,6 +34,8 @@ const dbPool = mysql.createPool({
     minVersion: 'TLSv1.2',
     rejectUnauthorized: false
   },
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -285,11 +287,13 @@ app.put('/api/members/:id', async (req, res) => {
   const { name, mobile, email, password, address, status } = req.body;
   try {
     await dbPool.query(
-      'UPDATE members SET name = ?, mobile = ?, email = ?, password = ?, address = ?, status = ? WHERE id = ?',
-      [name, mobile, email, password, address, status, req.params.id]
+      'UPDATE members SET name = COALESCE(?, name), mobile = COALESCE(?, mobile), email = COALESCE(?, email), password = COALESCE(?, password), address = COALESCE(?, address), status = COALESCE(?, status) WHERE id = ?',
+      [name || null, mobile || null, email || null, password || null, address || null, status || null, req.params.id]
     );
+    console.log(`✅ Member ${req.params.id} updated in TiDB Cloud MySQL!`);
     return res.json({ success: true, message: 'Member updated in MySQL' });
   } catch (err) {
+    console.error('❌ Error updating member in MySQL:', err);
     return res.status(500).json({ success: false, message: err.message });
   }
 });
