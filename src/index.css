@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Mukta+Malar:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1E3A8A; /* JSA Royal Navy Blue */
+  --color-secondary: #D97706; /* JSA Golden Amber */
+  --color-background: #F1F5F9; /* Professional SaaS Admin Light Gray */
+  --color-surface: #FFFFFF;
+  --color-text: #0F172A;
+  --color-muted: #64748B;
+  --color-border: #E2E8F0;
+  
+  --font-sans: "Inter", "Mukta Malar", sans-serif;
+  --font-serif: "Inter", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    color: #1E293B;
+    background-color: #F1F5F9;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    color: #0F172A;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Production Real Admin Panel Utility Classes (Matching Dashboard Template UI) */
+.glass-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card-hover:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.glass-nav {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.glass-pill {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #1E3A8A;
+}
+
+.btn-primary {
+  background: #1E3A8A;
+  color: #FFFFFF;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+  border: 1px solid #1E3A8A;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+
+/* Stat Block Colors matching the user's reference screenshot */
+.stat-card-gold {
+  background: #F59E0B;
+  color: #FFFFFF;
+}
+.stat-card-red {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+.stat-card-blue {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+.stat-card-green {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.text-gold {
+  color: #D97706;
+}
+
+.text-gradient-gold {
+  color: #1E3A8A;
+}
