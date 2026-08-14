@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { formatIndianCurrency } from '../utils/formatCurrency';
 import { sendRealOTPEmail, sendRealReceiptEmail, sendRealWelcomeEmail, sendRealChitEnrollmentEmail } from '../utils/emailService';
 import { sendAppNotification } from '../utils/notificationService';
@@ -10,6 +10,24 @@ export function SeettuProvider({ children }) {
   const [seettuList, setSeettuList] = useState([]);
   const [membersList, setMembersList] = useState([]);
   const [paymentsList, setPaymentsList] = useState([]);
+
+  // Load initial data from TiDB Cloud MySQL Database
+  const refreshDatabaseData = () => {
+    fetch('http://localhost:5000/api/bootstrap-data')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          if (data.seettuList && data.seettuList.length > 0) setSeettuList(data.seettuList);
+          if (data.membersList && data.membersList.length > 0) setMembersList(data.membersList);
+          if (data.paymentsList && data.paymentsList.length > 0) setPaymentsList(data.paymentsList);
+        }
+      })
+      .catch(err => console.log('MySQL Database sync notice:', err.message));
+  };
+
+  useEffect(() => {
+    refreshDatabaseData();
+  }, []);
 
   // Active Member session state for public website member login portal
   const [activeMember, setActiveMember] = useState(null);
@@ -46,6 +64,13 @@ export function SeettuProvider({ children }) {
   const addSeettu = (newScheme) => {
     setSeettuList(prev => [newScheme, ...prev]);
 
+    // Persist to TiDB Cloud MySQL
+    fetch('http://localhost:5000/api/seettu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newScheme)
+    }).then(() => refreshDatabaseData()).catch(err => console.error('MySQL scheme insert error:', err));
+
     // Send PWA Native App Notification
     sendAppNotification(
       "New Chit Group Created",
@@ -70,6 +95,13 @@ export function SeettuProvider({ children }) {
     };
 
     setMembersList(prev => [formattedMember, ...prev]);
+
+    // Persist to TiDB Cloud MySQL
+    fetch('http://localhost:5000/api/members', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formattedMember)
+    }).then(() => refreshDatabaseData()).catch(err => console.error('MySQL member insert error:', err));
 
     // 1. Dispatch Real Welcome Email to Member with ID & Password
     if (formattedMember.email) {
@@ -147,11 +179,19 @@ export function SeettuProvider({ children }) {
 
   const updateMember = (updatedMember) => {
     setMembersList(prev => prev.map(item => item.id === updatedMember.id ? updatedMember : item));
+    fetch(`http://localhost:5000/api/members/${updatedMember.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedMember)
+    }).catch(err => console.error('MySQL member update error:', err));
   };
 
   const deleteMember = (memberId) => {
     setMembersList(prev => prev.filter(item => item.id !== memberId));
     setPaymentsList(prev => prev.filter(p => p.memberId !== memberId));
+    fetch(`http://localhost:5000/api/members/${memberId}`, {
+      method: 'DELETE'
+    }).catch(err => console.error('MySQL member delete error:', err));
   };
 
   // Forgot Password OTP Flow
@@ -229,6 +269,13 @@ export function SeettuProvider({ children }) {
     }));
 
     if (!targetPayment) return;
+
+    // Persist Payment Paid status to TiDB Cloud MySQL
+    fetch('http://localhost:5000/api/payments/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId, paymentMode })
+    }).then(() => refreshDatabaseData()).catch(err => console.error('MySQL payment pay error:', err));
 
     // Find member for email receipt dispatch
     const targetMember = membersList.find(
@@ -342,103 +389,23 @@ export function SeettuProvider({ children }) {
 
   const addPayment = (newPayment) => {
     setPaymentsList(prev => [newPayment, ...prev]);
-
-    if (newPayment.status === 'Paid') {
-      setSeettuList(prev => prev.map(s => {
-        if (s.name.toLowerCase() === newPayment.seettu.toLowerCase()) {
-          return {
-            ...s,
-            collected: (s.collected || 0) + newPayment.paid,
-            pending: Math.max(0, (s.pending || 0) - newPayment.paid)
-          };
-        }
-        return s;
-      }));
-    }
   };
 
   const updatePayment = (updatedPayment) => {
-    let oldPayment = null;
-    setPaymentsList(prev => prev.map(p => {
-      if (p.id === updatedPayment.id) {
-        oldPayment = p;
-        return updatedPayment;
-      }
-      return p;
-    }));
-
-    if (!oldPayment) return;
-    const paidDiff = updatedPayment.paid - oldPayment.paid;
-
-    setMembersList(prev => prev.map(m => {
-      if (m.id === updatedPayment.memberId || m.name.toLowerCase() === updatedPayment.member.toLowerCase()) {
-        const updatedHistory = m.paymentHistory.map(ph => {
-          if (ph.seettu.toLowerCase() === updatedPayment.seettu.toLowerCase()) {
-            return {
-              ...ph,
-              amount: `₹${formatIndianCurrency(updatedPayment.paid)}`,
-              status: updatedPayment.status,
-              method: updatedPayment.paymentMethod,
-              receiptNo: updatedPayment.receiptNo
-            };
-          }
-          return ph;
-        });
-        return { ...m, paymentHistory: updatedHistory };
-      }
-      return m;
-    }));
-
-    setSeettuList(prev => prev.map(s => {
-      if (s.name.toLowerCase() === updatedPayment.seettu.toLowerCase()) {
-        return {
-          ...s,
-          collected: Math.max(0, (s.collected || 0) + paidDiff),
-          pending: Math.max(0, (s.pending || 0) - paidDiff)
-        };
-      }
-      return s;
-    }));
+    setPaymentsList(prev => prev.map(p => p.id === updatedPayment.id ? updatedPayment : p));
   };
 
   const deletePayment = (paymentId) => {
-    let deletedPayment = null;
-    setPaymentsList(prev => {
-      deletedPayment = prev.find(p => p.id === paymentId);
-      return prev.filter(p => p.id !== paymentId);
-    });
-
-    if (!deletedPayment) return;
-
-    setMembersList(prev => prev.map(m => {
-      if (m.id === deletedPayment.memberId || m.name.toLowerCase() === deletedPayment.member.toLowerCase()) {
-        return {
-          ...m,
-          paymentHistory: m.paymentHistory.filter(ph => !(ph.seettu.toLowerCase() === deletedPayment.seettu.toLowerCase() && ph.month === deletedPayment.month))
-        };
-      }
-      return m;
-    }));
-
-    setSeettuList(prev => prev.map(s => {
-      if (s.name.toLowerCase() === deletedPayment.seettu.toLowerCase()) {
-        return {
-          ...s,
-          collected: Math.max(0, (s.collected || 0) - deletedPayment.paid),
-          pending: (s.pending || 0) + deletedPayment.paid
-        };
-      }
-      return s;
-    }));
+    setPaymentsList(prev => prev.filter(p => p.id !== paymentId));
   };
 
   return (
-    <SeettuContext.Provider value={{ 
+    <SeettuContext.Provider value={{
       seettuList, 
       setSeettuList, 
-      addSeettu, 
-      updateSeettu, 
-      deleteSeettu, 
+      addSeettu,
+      updateSeettu,
+      deleteSeettu,
       membersList, 
       setMembersList, 
       addMember,
@@ -457,7 +424,8 @@ export function SeettuProvider({ children }) {
       activeMember,
       setActiveMember,
       loginMember,
-      logoutMember
+      logoutMember,
+      refreshDatabaseData
     }}>
       {children}
     </SeettuContext.Provider>
