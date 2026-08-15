@@ -411,6 +411,25 @@ app.post('/api/seettu', async (req, res) => {
   }
 });
 
+// 5.2. Delete Seettu Scheme from MySQL
+app.delete('/api/seettu/:id', async (req, res) => {
+  try {
+    const [schemes] = await dbPool.query('SELECT name FROM seettu_schemes WHERE id = ?', [req.params.id]);
+    
+    if (schemes.length > 0) {
+      const schemeName = schemes[0].name;
+      // Cascade delete member mappings and payments related to this scheme
+      await dbPool.query('DELETE FROM member_seettu_map WHERE seettu_name = ?', [schemeName]);
+      await dbPool.query('DELETE FROM payments WHERE seettu_name = ?', [schemeName]);
+    }
+    
+    await dbPool.query('DELETE FROM seettu_schemes WHERE id = ?', [req.params.id]);
+    return res.json({ success: true, message: 'Seettu scheme and its references deleted from MySQL' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 5.5. Delete Payment from MySQL
 app.delete('/api/payments/:id', async (req, res) => {
   try {

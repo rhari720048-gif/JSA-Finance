@@ -109,7 +109,30 @@ export function SeettuProvider({ children }) {
   };
 
   const deleteSeettu = (schemeId) => {
+    const schemeToDelete = seettuList.find(s => s.id === schemeId);
+    if (!schemeToDelete) return;
+
+    const schemeName = schemeToDelete.name;
+
+    // 1. Remove from Seettu List
     setSeettuList(prev => prev.filter(item => item.id !== schemeId));
+
+    // 2. Remove from Members List (seettuDetails & paymentHistory)
+    setMembersList(prev => prev.map(m => {
+      return {
+        ...m,
+        seettuDetails: (m.seettuDetails || []).filter(s => s.name !== schemeName),
+        paymentHistory: (m.paymentHistory || []).filter(ph => ph.seettu !== schemeName)
+      };
+    }));
+
+    // 3. Remove from Payments List
+    setPaymentsList(prev => prev.filter(p => p.seettu !== schemeName));
+
+    // 4. Delete from TiDB Cloud MySQL
+    fetch(`${API_BASE}/seettu/${schemeId}`, {
+      method: 'DELETE'
+    }).catch(err => console.error('MySQL delete seettu error:', err));
   };
 
   // Member CRUD with Credentials (ID, Mobile, Email, Password)
