@@ -182,9 +182,11 @@ app.get('/api/bootstrap-data', async (req, res) => {
     // Build rich scheme objects with roster
     const formattedSchemes = schemes.map(s => {
       const schemeMembers = mappings.filter(map => map.seettu_name === s.name);
+      const schemePayments = payments.filter(p => p.seettu_name === s.name);
+      
       const roster = schemeMembers.map(map => {
         const mObj = members.find(mem => mem.id === map.member_id);
-        const mPayment = payments.find(p => p.member_id === map.member_id && p.seettu_name === s.name);
+        const mPayment = schemePayments.find(p => p.member_id === map.member_id);
         return {
           id: map.member_id,
           name: mObj?.name || 'Member',
@@ -193,15 +195,18 @@ app.get('/api/bootstrap-data', async (req, res) => {
         };
       });
 
+      const collectedAmount = schemePayments.reduce((sum, p) => sum + (Number(p.paid) || 0), 0);
+      const pendingAmount = schemePayments.reduce((sum, p) => sum + (Number(p.balance) || 0), 0);
+
       return {
         id: s.id,
         name: s.name,
         monthly: s.monthly,
         targetTotal: s.total_pool,
         duration: s.duration,
-        members: s.members_count || roster.length,
-        collected: s.collected || 0,
-        pending: s.pending || 0,
+        members: roster.length, // dynamically calculated
+        collected: collectedAmount, // dynamically calculated
+        pending: pendingAmount, // dynamically calculated
         status: s.status,
         type: s.frequency || 'Monthly',
         membersList: roster
@@ -215,9 +220,11 @@ app.get('/api/bootstrap-data', async (req, res) => {
 
     const synthesizedSchemes = missingSchemeNames.map((name, index) => {
       const schemeMembers = mappings.filter(map => map.seettu_name === name);
+      const schemePayments = payments.filter(p => p.seettu_name === name);
+
       const roster = schemeMembers.map(map => {
         const mObj = members.find(mem => mem.id === map.member_id);
-        const mPayment = payments.find(p => p.member_id === map.member_id && p.seettu_name === name);
+        const mPayment = schemePayments.find(p => p.member_id === map.member_id);
         return {
           id: map.member_id,
           name: mObj?.name || 'Member',
@@ -226,6 +233,9 @@ app.get('/api/bootstrap-data', async (req, res) => {
         };
       });
 
+      const collectedAmount = schemePayments.reduce((sum, p) => sum + (Number(p.paid) || 0), 0);
+      const pendingAmount = schemePayments.reduce((sum, p) => sum + (Number(p.balance) || 0), 0);
+
       return {
         id: `LEGACY-${index + 1}`,
         name: name,
@@ -233,8 +243,8 @@ app.get('/api/bootstrap-data', async (req, res) => {
         targetTotal: 0,
         duration: 'Legacy',
         members: roster.length,
-        collected: 0,
-        pending: 0,
+        collected: collectedAmount, // dynamically calculated
+        pending: pendingAmount, // dynamically calculated
         status: 'Active',
         type: 'Monthly',
         membersList: roster,
