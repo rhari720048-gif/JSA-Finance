@@ -244,7 +244,7 @@ export default function AdminSeettu() {
 
           <div className="glass-card p-6 rounded-3xl border border-slate-200 bg-white/90 backdrop-blur-xl shadow-lg text-center">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 font-serif">
-              {currentSeettu.type === 'Weekly' ? 'Weekly' : 'Monthly'}
+              {currentSeettu.type === 'Weekly' ? 'Weekly' : currentSeettu.type === 'Daily' ? 'Daily' : 'Monthly'}
             </p>
             <h3 className="text-3xl font-extrabold text-slate-900 font-sans">₹{formatIndianCurrency(currentSeettu.monthly)}</h3>
             <p className="text-xs text-slate-500 mt-1">Per Member Rate</p>
@@ -547,13 +547,14 @@ export default function AdminSeettu() {
                       setFormData({ 
                         ...formData, 
                         type: newType,
-                        duration: newType === 'Weekly' ? '20 Weeks' : '10 Months'
+                        duration: newType === 'Weekly' ? '20 Weeks' : newType === 'Daily' ? '100 Days' : '10 Months'
                       });
                     }}
                     className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl outline-none text-stone-900 text-sm focus:border-[#7C2D12]"
                   >
                     <option value="Monthly">Monthly</option>
                     <option value="Weekly">Weekly</option>
+                    <option value="Daily">Daily</option>
                   </select>
                 </div>
 
@@ -572,7 +573,7 @@ export default function AdminSeettu() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
-                    {formData.type === 'Weekly' ? 'Weekly Amount (₹)' : 'Monthly Amount (₹)'}
+                    {formData.type === 'Weekly' ? 'Weekly Amount (₹)' : formData.type === 'Daily' ? 'Daily Amount (₹)' : 'Monthly Amount (₹)'}
                   </label>
                   <input 
                     type="number"
@@ -588,7 +589,7 @@ export default function AdminSeettu() {
                   <input 
                     type="text"
                     required
-                    placeholder={formData.type === 'Weekly' ? 'e.g. 20 Weeks' : 'e.g. 10 Months'}
+                    placeholder={formData.type === 'Weekly' ? 'e.g. 20 Weeks' : formData.type === 'Daily' ? 'e.g. 100 Days' : 'e.g. 10 Months'}
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl outline-none text-stone-900 text-sm focus:border-[#7C2D12]"

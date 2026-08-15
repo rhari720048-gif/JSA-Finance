@@ -197,13 +197,13 @@ app.get('/api/bootstrap-data', async (req, res) => {
         id: s.id,
         name: s.name,
         monthly: s.monthly,
-        totalPool: s.total_pool,
+        targetTotal: s.total_pool,
         duration: s.duration,
-        membersCount: s.members_count || roster.length,
+        members: s.members_count || roster.length,
         collected: s.collected || 0,
         pending: s.pending || 0,
         status: s.status,
-        frequency: s.frequency || 'Monthly',
+        type: s.frequency || 'Monthly',
         membersList: roster
       };
     });
@@ -397,13 +397,13 @@ app.delete('/api/members/:id', async (req, res) => {
 
 // 5. Add New Seettu Scheme to MySQL
 app.post('/api/seettu', async (req, res) => {
-  const { id, name, monthly, totalPool, duration, frequency } = req.body;
+  const { id, name, type, members, monthly, targetTotal, duration } = req.body;
   const schemeId = id || `SCHEME-${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
     await dbPool.query(
       'INSERT INTO seettu_schemes (id, name, monthly, total_pool, duration, members_count, collected, pending, status, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [schemeId, name, monthly, totalPool, duration, 0, 0, monthly * duration, 'Active', frequency || 'Monthly']
+      [schemeId, name, monthly, targetTotal, duration, members, 0, targetTotal, 'Active', type || 'Monthly']
     );
     return res.json({ success: true, schemeId, message: 'Seettu scheme created in MySQL' });
   } catch (err) {
