@@ -208,6 +208,42 @@ app.get('/api/bootstrap-data', async (req, res) => {
       };
     });
 
+    // Synthesize legacy schemes (schemes in member_seettu_map but NOT in seettu_schemes)
+    const existingSchemeNames = schemes.map(s => s.name);
+    const mappedSeettuNames = [...new Set(mappings.map(m => m.seettu_name))];
+    const missingSchemeNames = mappedSeettuNames.filter(name => !existingSchemeNames.includes(name));
+
+    const synthesizedSchemes = missingSchemeNames.map((name, index) => {
+      const schemeMembers = mappings.filter(map => map.seettu_name === name);
+      const roster = schemeMembers.map(map => {
+        const mObj = members.find(mem => mem.id === map.member_id);
+        const mPayment = payments.find(p => p.member_id === map.member_id && p.seettu_name === name);
+        return {
+          id: map.member_id,
+          name: mObj?.name || 'Member',
+          status: mPayment?.status || 'Pending',
+          paidAmount: `₹${formatIndianCurrency(mPayment?.paid || 0)}`
+        };
+      });
+
+      return {
+        id: `LEGACY-${index + 1}`,
+        name: name,
+        monthly: 0,
+        targetTotal: 0,
+        duration: 'Legacy',
+        members: roster.length,
+        collected: 0,
+        pending: 0,
+        status: 'Active',
+        type: 'Monthly',
+        membersList: roster,
+        isLegacy: true
+      };
+    });
+
+    const finalSchemes = [...formattedSchemes, ...synthesizedSchemes];
+
     const formattedPayments = payments.map(p => ({
       id: p.id,
       member: p.member_name,
@@ -226,7 +262,7 @@ app.get('/api/bootstrap-data', async (req, res) => {
     return res.json({
       success: true,
       membersList: formattedMembers,
-      seettuList: formattedSchemes,
+      seettuList: finalSchemes,
       paymentsList: formattedPayments
     });
   } catch (err) {
@@ -414,16 +450,27 @@ app.post('/api/seettu', async (req, res) => {
 // 5.2. Delete Seettu Scheme from MySQL
 app.delete('/api/seettu/:id', async (req, res) => {
   try {
-    const [schemes] = await dbPool.query('SELECT name FROM seettu_schemes WHERE id = ?', [req.params.id]);
+    const schemeName = req.query.name;
     
-    if (schemes.length > 0) {
-      const schemeName = schemes[0].name;
+    if (schemeName) {
       // Cascade delete member mappings and payments related to this scheme
       await dbPool.query('DELETE FROM member_seettu_map WHERE seettu_name = ?', [schemeName]);
       await dbPool.query('DELETE FROM payments WHERE seettu_name = ?', [schemeName]);
+    } else {
+      // Fallback if name is not provided in query (for backward compatibility)
+      const [schemes] = await dbPool.query('SELECT name FROM seettu_schemes WHERE id = ?', [req.params.id]);
+      if (schemes.length > 0) {
+        const dbSchemeName = schemes[0].name;
+        await dbPool.query('DELETE FROM member_seettu_map WHERE seettu_name = ?', [dbSchemeName]);
+        await dbPool.query('DELETE FROM payments WHERE seettu_name = ?', [dbSchemeName]);
+      }
     }
     
-    await dbPool.query('DELETE FROM seettu_schemes WHERE id = ?', [req.params.id]);
+    // Attempt to delete from seettu_schemes table as well
+    if (!req.params.id.startsWith('LEGACY-')) {
+      await dbPool.query('DELETE FROM seettu_schemes WHERE id = ?', [req.params.id]);
+    }
+    
     return res.json({ success: true, message: 'Seettu scheme and its references deleted from MySQL' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

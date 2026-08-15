@@ -130,7 +130,7 @@ export function SeettuProvider({ children }) {
     setPaymentsList(prev => prev.filter(p => p.seettu !== schemeName));
 
     // 4. Delete from TiDB Cloud MySQL
-    fetch(`${API_BASE}/seettu/${schemeId}`, {
+    fetch(`${API_BASE}/seettu/${schemeId}?name=${encodeURIComponent(schemeName)}`, {
       method: 'DELETE'
     }).catch(err => console.error('MySQL delete seettu error:', err));
   };
