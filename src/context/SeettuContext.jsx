@@ -569,6 +569,9 @@ export function SeettuProvider({ children }) {
 
   const deletePayment = (paymentId) => {
     setPaymentsList(prev => prev.filter(p => p.id !== paymentId));
+    fetch(`${API_BASE}/payments/${paymentId}`, {
+      method: 'DELETE'
+    }).catch(err => console.error('MySQL payment delete error:', err));
   };
 
   return (

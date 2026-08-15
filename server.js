@@ -411,6 +411,16 @@ app.post('/api/seettu', async (req, res) => {
   }
 });
 
+// 5.5. Delete Payment from MySQL
+app.delete('/api/payments/:id', async (req, res) => {
+  try {
+    await dbPool.query('DELETE FROM payments WHERE id = ?', [req.params.id]);
+    return res.json({ success: true, message: 'Payment deleted from MySQL' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 6. Mark Payment as Paid in MySQL
 app.post('/api/payments/pay', async (req, res) => {
   const { paymentId, paymentMode } = req.body;
