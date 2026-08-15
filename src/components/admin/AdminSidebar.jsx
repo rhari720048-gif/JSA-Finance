@@ -41,7 +41,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
         {/* Top Official JSA Logo Header */}
         <div className="p-4 pt-6 flex items-center justify-between border-b border-slate-200/80 bg-white/70">
           <div className="flex items-center gap-3">
-            <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 w-auto object-contain" />
+            <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 w-auto object-contain rounded-xl shadow-sm" />
           </div>
 
           <button 

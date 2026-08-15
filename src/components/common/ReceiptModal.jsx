@@ -47,7 +47,7 @@ export default function ReceiptModal() {
 
         {/* Company Logo & Success Header Icon */}
         <div className="text-center mb-4">
-          <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 mx-auto object-contain mb-3" />
+          <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 mx-auto object-contain mb-3 rounded-xl shadow-sm" />
           <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2 border-4 border-emerald-50">
             <CheckCircle2 className="w-8 h-8" />
           </div>

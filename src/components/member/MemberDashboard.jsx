@@ -52,7 +52,7 @@ export default function MemberDashboard() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl max-w-md w-full text-center space-y-4">
-          <img src={logoImg} alt="JSA Finance Logo" className="h-16 mx-auto object-contain mb-2" />
+          <img src={logoImg} alt="JSA Finance Logo" className="h-16 mx-auto object-contain mb-2 rounded-xl shadow-sm" />
           <h2 className="text-2xl font-bold text-slate-900">Member Portal Access</h2>
           <p className="text-sm text-slate-600">Please log in on our website to access your personal member dashboard.</p>
           <button 
@@ -151,7 +151,7 @@ export default function MemberDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-3">
-              <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-10 sm:h-12 w-auto object-contain" />
+              <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-10 sm:h-12 w-auto object-contain rounded-xl shadow-sm" />
             </Link>
             <div className="hidden sm:block border-l border-slate-200 pl-4">
               <span className="text-xs font-bold text-[#1E3A8A] uppercase tracking-wider block">Member Portal</span>

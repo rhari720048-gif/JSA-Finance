@@ -48,7 +48,7 @@ export default function AdminLayout() {
       <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center p-4">
         <div className="bg-white max-w-md w-full p-8 rounded-[2.5rem] border border-slate-200 shadow-2xl relative overflow-hidden">
           <div className="text-center mb-8">
-            <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-14 mx-auto object-contain mb-4" />
+            <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-14 mx-auto object-contain mb-4 rounded-xl shadow-sm" />
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#1E3A8A]/10 text-[#1E3A8A] text-xs font-bold uppercase tracking-wider mb-2">
               <ShieldCheck className="w-4 h-4 text-[#D97706]" /> Restricted Admin Gateway
             </div>

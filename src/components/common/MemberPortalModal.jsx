@@ -126,7 +126,7 @@ export default function MemberPortalModal({ isOpen, onClose }) {
 
         {/* Modal Header */}
         <div className="text-center pb-4 border-b border-slate-100">
-          <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 mx-auto object-contain mb-2" />
+          <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 mx-auto object-contain mb-2 rounded-xl shadow-sm" />
           <h2 className="text-2xl font-bold text-slate-900">Portal Login</h2>
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
             {activeMember ? 'Logged in as Member' : 'Member & Admin Portal Sign In'}

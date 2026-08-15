@@ -21,8 +21,8 @@ export function sendAppNotification(title, body) {
         navigator.serviceWorker.ready.then((registration) => {
           registration.showNotification(title, {
             body: body,
-            icon: '/logo.png',
-            badge: '/logo.png',
+            icon: '/app-icon.png',
+            badge: '/app-icon.png',
             vibrate: [200, 100, 200],
             tag: 'jsa-finance-notification'
           });
@@ -30,7 +30,7 @@ export function sendAppNotification(title, body) {
       } else {
         new Notification(title, {
           body: body,
-          icon: '/logo.png'
+          icon: '/app-icon.png'
         });
       }
     } catch (e) {

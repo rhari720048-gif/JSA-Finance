@@ -10,7 +10,7 @@ export default function Footer() {
           
           <div className="md:col-span-1">
             <div className="bg-white p-3 rounded-2xl inline-block mb-6 shadow-md border border-slate-200">
-              <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 w-auto object-contain" />
+              <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 w-auto object-contain rounded-xl shadow-sm" />
             </div>
             <p className="text-sm leading-relaxed text-slate-400 font-normal">
               A trusted financial institution dedicated to providing transparent, disciplined, and rewarding chit savings schemes.

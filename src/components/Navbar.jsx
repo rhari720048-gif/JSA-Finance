@@ -24,7 +24,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <a href="#home" className="flex items-center gap-3">
-              <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 sm:h-14 w-auto object-contain" />
+              <img src={logoImg} alt="Jai Sri Amman Finance Logo" className="h-12 sm:h-14 w-auto object-contain rounded-xl shadow-sm" />
             </a>
             
             <div className="hidden md:flex items-center space-x-6">
