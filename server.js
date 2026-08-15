@@ -447,9 +447,10 @@ app.post('/api/seettu', async (req, res) => {
   const schemeId = id || `SCHEME-${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
+    const durationInt = parseInt(duration) || 10;
     await dbPool.query(
       'INSERT INTO seettu_schemes (id, name, monthly, total_pool, duration, members_count, collected, pending, status, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [schemeId, name, monthly, targetTotal, duration, members, 0, targetTotal, 'Active', type || 'Monthly']
+      [schemeId, name, monthly, targetTotal, durationInt, members, 0, targetTotal, 'Active', type || 'Monthly']
     );
     return res.json({ success: true, schemeId, message: 'Seettu scheme created in MySQL' });
   } catch (err) {
