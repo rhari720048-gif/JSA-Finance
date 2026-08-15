@@ -56,6 +56,20 @@ function urlBase64ToUint8Array(base64String) {
 export async function subscribeToWebPush(memberId) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   
+  // Explicitly request permission first before subscribing
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.warn('Push notification permission denied by user.');
+        return;
+      }
+    } catch (e) {
+      console.warn('Could not request notification permission', e);
+      return;
+    }
+  }
+  
   try {
     const registration = await navigator.serviceWorker.ready;
     const publicVapidKey = 'BA9-0ZQlBcziK6UjV34VgI9Kh-jf2Cl0aFSjLA56ABaBOfFwy1Lfx_6n0ErTrudjh5NHu7wiENXD8mWxwOALc4E';
