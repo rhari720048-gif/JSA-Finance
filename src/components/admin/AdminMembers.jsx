@@ -979,6 +979,48 @@ export default function AdminMembers() {
                 />
               </div>
 
+              <div className="pt-2 border-t border-slate-100 mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Select Enrolled Seettu Schemes
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">Check one or more</span>
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  {seettuList.map((scheme) => {
+                    const isChecked = selectedSeettuIds.includes(scheme.id);
+                    return (
+                      <label 
+                        key={scheme.id}
+                        onClick={() => toggleSeettuSelection(scheme.id)}
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                          isChecked 
+                            ? 'bg-white border-[#1E3A8A] shadow-sm ring-1 ring-[#1E3A8A]/30' 
+                            : 'bg-slate-100/70 border-slate-200 hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                            isChecked ? 'bg-[#1E3A8A] border-[#1E3A8A] text-white' : 'border-slate-300 bg-white'
+                          }`}>
+                            {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-xs">{scheme.name}</p>
+                            <p className="text-[11px] text-slate-500 font-normal">{scheme.type} • {scheme.duration}</p>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-extrabold text-[#1E3A8A] font-sans">
+                          ₹{formatIndianCurrency(scheme.monthly)}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="pt-4 flex gap-3">
                 <button 
                   type="button" 

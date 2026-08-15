@@ -358,6 +358,31 @@ app.post('/api/members/:id/seettu', async (req, res) => {
   }
 });
 
+// 3.6. Remove Seettu for existing member
+app.delete('/api/members/:id/seettu', async (req, res) => {
+  const { seettuNames } = req.body;
+  const memberId = req.params.id;
+
+  try {
+    if (seettuNames && seettuNames.length > 0) {
+      for (const name of seettuNames) {
+        await dbPool.query('DELETE FROM member_seettu_map WHERE member_id = ? AND seettu_name = ?', [memberId, name]);
+        await dbPool.query('DELETE FROM payments WHERE member_id = ? AND seettu_name = ? AND status = ?', [memberId, name, 'Pending']);
+      }
+    }
+    
+    await sendPushNotificationToMember(memberId, {
+      title: 'Chit Scheme Removed',
+      body: `You have been removed from the selected chit schemes.`
+    });
+
+    return res.json({ success: true, message: 'Chits removed successfully' });
+  } catch (err) {
+    console.error('❌ Error removing seettu:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 4. Delete Member from MySQL
 app.delete('/api/members/:id', async (req, res) => {
   try {

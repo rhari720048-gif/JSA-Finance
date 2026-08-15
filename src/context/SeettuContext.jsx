@@ -206,7 +206,10 @@ export function SeettuProvider({ children }) {
   const updateMember = (updatedMember) => {
     const oldMember = membersList.find(m => m.id === updatedMember.id);
     const oldSeettuNames = (oldMember?.seettuDetails || []).map(s => s.name);
+    const newSeettuNames = (updatedMember.seettuDetails || []).map(s => s.name);
+    
     const newSeettus = (updatedMember.seettuDetails || []).filter(s => !oldSeettuNames.includes(s.name));
+    const removedSeettuNames = oldSeettuNames.filter(name => !newSeettuNames.includes(name));
 
     setMembersList(prev => prev.map(item => item.id === updatedMember.id ? updatedMember : item));
     
@@ -285,6 +288,30 @@ export function SeettuProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ seettuDetails: newSeettus, memberName: updatedMember.name })
       }).catch(err => console.error('MySQL map new seettu error:', err));
+    }
+
+    // 3. Process removed scheme enrollments
+    if (removedSeettuNames.length > 0) {
+      // Remove from global payments list
+      setPaymentsList(prev => prev.filter(p => !(p.memberId === updatedMember.id && removedSeettuNames.includes(p.seettu))));
+      
+      // Remove from global seettu roster
+      setSeettuList(prevList => prevList.map(s => {
+        if (removedSeettuNames.includes(s.name)) {
+          return {
+            ...s,
+            membersList: (s.membersList || []).filter(m => m.id !== updatedMember.id)
+          };
+        }
+        return s;
+      }));
+
+      // Delete from backend MySQL Database
+      fetch(`${API_BASE}/members/${updatedMember.id}/seettu`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seettuNames: removedSeettuNames })
+      }).catch(err => console.error('MySQL delete seettu mapping error:', err));
     }
   };
 
