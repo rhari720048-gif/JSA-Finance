@@ -7,7 +7,9 @@ import logoImg from '../../assets/logo.png';
 
 export default function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    return localStorage.getItem('jsa_admin_logged_in') === 'true';
+  });
   
   // Admin Login Form State
   const [adminEmail, setAdminEmail] = useState('');
@@ -26,6 +28,7 @@ export default function AdminLayout() {
       (adminPassword === 'admin123' || adminPassword === 'admin')
     ) {
       setIsAdminLoggedIn(true);
+      localStorage.setItem('jsa_admin_logged_in', 'true');
     } else {
       setLoginError('Invalid Admin credentials. Demo: Username "admin" | Password "admin123"');
     }
@@ -121,7 +124,10 @@ export default function AdminLayout() {
         <AdminHeader 
           setIsSidebarOpen={setIsSidebarOpen} 
           activeTitle={getPageTitle()} 
-          onLogout={() => setIsAdminLoggedIn(false)}
+          onLogout={() => {
+            setIsAdminLoggedIn(false);
+            localStorage.removeItem('jsa_admin_logged_in');
+          }}
         />
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <Outlet />

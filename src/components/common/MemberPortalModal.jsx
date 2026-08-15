@@ -61,6 +61,7 @@ export default function MemberPortalModal({ isOpen, onClose }) {
       (password === 'admin123' || password === 'admin')
     ) {
       setSuccessMessage('Admin credentials verified! Redirecting to Admin Panel...');
+      localStorage.setItem('jsa_admin_logged_in', 'true');
       setTimeout(() => {
         onClose();
         navigate('/admin/dashboard');

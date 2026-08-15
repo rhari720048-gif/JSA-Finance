@@ -298,6 +298,36 @@ app.put('/api/members/:id', async (req, res) => {
   }
 });
 
+// 3.5. Add newly enrolled Seettu for existing member
+app.post('/api/members/:id/seettu', async (req, res) => {
+  const { seettuDetails, memberName } = req.body;
+  const memberId = req.params.id;
+
+  try {
+    if (seettuDetails && seettuDetails.length > 0) {
+      for (const detail of seettuDetails) {
+        await dbPool.query(
+          'INSERT INTO member_seettu_map (member_id, seettu_name) VALUES (?, ?)',
+          [memberId, detail.name]
+        );
+
+        const [schemes] = await dbPool.query('SELECT * FROM seettu_schemes WHERE name = ?', [detail.name]);
+        const due = schemes.length > 0 ? schemes[0].monthly : 2000;
+        const payId = `PAY-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        await dbPool.query(
+          'INSERT INTO payments (id, member_id, member_name, seettu_name, month, due_amount, paid, balance, status, payment_date, payment_method, receipt_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [payId, memberId, memberName, detail.name, 'August 2026', due, 0, due, 'Pending', 'Due Today', 'N/A', 'Pending']
+        );
+      }
+    }
+    return res.json({ success: true, message: 'New chits mapped successfully' });
+  } catch (err) {
+    console.error('❌ Error mapping new seettu:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 4. Delete Member from MySQL
 app.delete('/api/members/:id', async (req, res) => {
   try {

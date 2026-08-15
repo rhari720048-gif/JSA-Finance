@@ -271,11 +271,21 @@ export function SeettuProvider({ children }) {
       setPaymentsList(prev => [newPayItem, ...prev]);
     });
 
+    // 1. Update basic member details
     fetch(`${API_BASE}/members/${updatedMember.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedMember)
     }).catch(err => console.error('MySQL member update error:', err));
+
+    // 2. Persist newly added chits to MySQL Database mappings and payments table
+    if (newSeettus.length > 0) {
+      fetch(`${API_BASE}/members/${updatedMember.id}/seettu`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seettuDetails: newSeettus, memberName: updatedMember.name })
+      }).catch(err => console.error('MySQL map new seettu error:', err));
+    }
   };
 
   const deleteMember = (memberId) => {
