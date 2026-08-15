@@ -55,10 +55,14 @@ export default function AdminSettings() {
     email: COMPANY_DETAILS.email,
     address: COMPANY_DETAILS.address,
     currency: 'INR (₹)',
-    timezone: 'Asia/Kolkata (IST)'
+    timezone: 'Asia/Kolkata (IST)',
+    memberIdPrefix: localStorage.getItem('jsa_member_id_prefix') || 'JSA'
   });
 
   const handleSave = (sectionName) => {
+    if (sectionName === 'System Settings') {
+      localStorage.setItem('jsa_member_id_prefix', systemSettings.memberIdPrefix);
+    }
     setSaveNotice(`${sectionName} saved successfully.`);
     setTimeout(() => setSaveNotice(null), 3500);
   };
@@ -428,6 +432,21 @@ export default function AdminSettings() {
                     className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Member ID Prefix</label>
+                <div className="relative">
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text"
+                    value={systemSettings.memberIdPrefix}
+                    onChange={(e) => setSystemSettings({ ...systemSettings, memberIdPrefix: e.target.value })}
+                    placeholder="e.g. JSA or MEM-2026"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm outline-none focus:border-[#1E3A8A]"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1 font-medium">New member IDs will be generated as: <span className="font-bold text-[#1E3A8A]">{systemSettings.memberIdPrefix}-001</span></p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

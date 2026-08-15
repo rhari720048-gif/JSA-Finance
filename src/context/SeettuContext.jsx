@@ -31,9 +31,11 @@ export function SeettuProvider({ children }) {
 
   useEffect(() => {
     refreshDatabaseData();
+    const interval = setInterval(refreshDatabaseData, 10000); // Auto-refresh every 10s
+    return () => clearInterval(interval);
   }, []);
 
-  // Persistent Active Member session state for public website member login portal
+  // Persistent Active Member session state
   const [activeMember, setActiveMember] = useState(() => {
     try {
       const saved = localStorage.getItem('jsa_active_member');
@@ -42,6 +44,17 @@ export function SeettuProvider({ children }) {
       return null;
     }
   });
+
+  // Keep activeMember in sync with live membersList updates
+  useEffect(() => {
+    if (activeMember && membersList.length > 0) {
+      const liveProfile = membersList.find(m => m.id === activeMember.id);
+      if (liveProfile && JSON.stringify(activeMember) !== JSON.stringify(liveProfile)) {
+        setActiveMember(liveProfile);
+        localStorage.setItem('jsa_active_member', JSON.stringify(liveProfile));
+      }
+    }
+  }, [membersList, activeMember]);
 
   const loginMember = (identifier, password) => {
     const cleanId = identifier ? identifier.trim().toLowerCase() : '';
@@ -191,7 +204,73 @@ export function SeettuProvider({ children }) {
   };
 
   const updateMember = (updatedMember) => {
+    const oldMember = membersList.find(m => m.id === updatedMember.id);
+    const oldSeettuNames = (oldMember?.seettuDetails || []).map(s => s.name);
+    const newSeettus = (updatedMember.seettuDetails || []).filter(s => !oldSeettuNames.includes(s.name));
+
     setMembersList(prev => prev.map(item => item.id === updatedMember.id ? updatedMember : item));
+    
+    // Process new scheme enrollments added during edit
+    newSeettus.forEach(sDetail => {
+      const schemeObj = seettuList.find(s => s.name === sDetail.name || s.id === sDetail.id);
+      const due = schemeObj ? schemeObj.monthly : 2000;
+      
+      // Send App Notification
+      sendAppNotification(
+        "New Scheme Enrollment",
+        `You have been successfully added to the ${sDetail.name} scheme.`
+      );
+
+      // Send Email Notification
+      if (updatedMember.email) {
+        sendRealChitEnrollmentEmail({
+          toEmail: updatedMember.email,
+          memberName: updatedMember.name,
+          seettuName: sDetail.name,
+          amount: `₹${formatIndianCurrency(due)}`,
+          frequency: sDetail.frequency || 'Monthly',
+          poolTarget: 'Guaranteed Payout'
+        });
+      }
+
+      // Add to Chit Group roster
+      if (schemeObj) {
+        setSeettuList(prevList => prevList.map(s => {
+          if (s.id === schemeObj.id || s.name === schemeObj.name) {
+            const existingMembers = s.membersList || [];
+            const alreadyExists = existingMembers.some(rm => rm.name === updatedMember.name || rm.id === updatedMember.id);
+            if (!alreadyExists) {
+              return {
+                ...s,
+                membersList: [
+                  ...existingMembers,
+                  { id: updatedMember.id, name: updatedMember.name, status: "Pending", paidAmount: "₹0" }
+                ]
+              };
+            }
+          }
+          return s;
+        }));
+      }
+
+      // Create initial payment ledger
+      const newPayItem = {
+        id: `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
+        member: updatedMember.name,
+        memberId: updatedMember.id,
+        seettu: sDetail.name,
+        month: "August 2026",
+        dueAmount: due,
+        paid: 0,
+        balance: due,
+        status: "Pending",
+        paymentDate: "Due Today",
+        paymentMethod: "N/A",
+        receiptNo: "Pending"
+      };
+      setPaymentsList(prev => [newPayItem, ...prev]);
+    });
+
     fetch(`${API_BASE}/members/${updatedMember.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

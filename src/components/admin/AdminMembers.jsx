@@ -88,7 +88,19 @@ export default function AdminMembers() {
       .filter(s => selectedSeettuIds.includes(s.id))
       .map(s => ({ id: s.id, name: s.name, monthly: `₹${formatIndianCurrency(s.monthly)}`, status: 'Paid' }));
 
-    const newId = `MEM-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const prefix = localStorage.getItem('jsa_member_id_prefix') || 'JSA';
+    const existingNumbers = membersList
+      .map(m => {
+        const parts = m.id.split('-');
+        return parseInt(parts[parts.length - 1], 10);
+      })
+      .filter(n => !isNaN(n));
+      
+    let nextNum = 1;
+    while (existingNumbers.includes(nextNum)) {
+      nextNum++;
+    }
+    const newId = `${prefix}-${nextNum.toString().padStart(3, '0')}`;
 
     const newMemberObj = {
       id: newId,
