@@ -3,8 +3,14 @@ import cors from 'cors';
 import nodemailer from 'nodemailer';
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import webpush from 'web-push';
 
 dotenv.config();
+
+// Web Push Configuration
+const PUBLIC_VAPID_KEY = process.env.PUBLIC_VAPID_KEY || 'BA9-0ZQlBcziK6UjV34VgI9Kh-jf2Cl0aFSjLA56ABaBOfFwy1Lfx_6n0ErTrudjh5NHu7wiENXD8mWxwOALc4E';
+const PRIVATE_VAPID_KEY = process.env.PRIVATE_VAPID_KEY || '6LF4lAzZRz58oy3KrS6XR5PBJPAB3n-451QKx9gcjXk';
+webpush.setVapidDetails('mailto:admin@sriammanfinance.com', PUBLIC_VAPID_KEY, PRIVATE_VAPID_KEY);
 
 const app = express();
 app.use(cors());
@@ -104,6 +110,17 @@ async function initDatabaseTables() {
         member_id VARCHAR(64) NOT NULL,
         seettu_name VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 5. Push Subscriptions Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        member_id VARCHAR(64) NOT NULL,
+        subscription JSON NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_member_sub (member_id)
       );
     `);
 
@@ -275,6 +292,12 @@ app.post('/api/members', async (req, res) => {
       }).catch(err => console.error('Welcome email send error:', err));
     }
 
+    // Send Welcome Push Notification
+    await sendPushNotificationToMember(memberId, {
+      title: 'Welcome to JSA Finance',
+      body: `Hi ${name}, your member account has been successfully created. ID: ${memberId}`
+    });
+
     return res.json({ success: true, memberId, message: 'Member created successfully in TiDB Cloud MySQL!' });
   } catch (err) {
     console.error('❌ Error adding member to MySQL:', err);
@@ -321,6 +344,13 @@ app.post('/api/members/:id/seettu', async (req, res) => {
         );
       }
     }
+    
+    // Send Push Notification for New Schemes
+    await sendPushNotificationToMember(memberId, {
+      title: 'New Chit Scheme Added',
+      body: `Hi ${memberName}, you have been enrolled in new chit schemes successfully.`
+    });
+
     return res.json({ success: true, message: 'New chits mapped successfully' });
   } catch (err) {
     console.error('❌ Error mapping new seettu:', err);
@@ -404,6 +434,12 @@ app.post('/api/payments/pay', async (req, res) => {
       `
     }).catch(err => console.error('Receipt email send error:', err));
 
+    // Send Payment Paid Push Notification
+    await sendPushNotificationToMember(pay.member_id, {
+      title: 'Payment Received Successfully',
+      body: `Your payment of ₹${formatIndianCurrency(pay.due_amount)} for ${pay.seettu_name} has been marked as Paid. Receipt No: ${newReceiptNo}`
+    });
+
     return res.json({
       success: true,
       receiptNo: newReceiptNo,
@@ -464,9 +500,57 @@ app.post('/api/send-reminder', async (req, res) => {
         </div>
       `
     });
+    
+    // Dispatch Push Notification if subscribed
+    await sendPushNotificationToMember(req.body.memberId, {
+      title: 'Upcoming Installment Due',
+      body: `Hi ${memberName}, your installment for ${seettuName} is due in ${daysLeft || 3} days. Amount: ${amount}`,
+    });
+
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// -------------------------------------------------------------
+// WEB PUSH NOTIFICATION ENDPOINTS & HELPERS
+// -------------------------------------------------------------
+
+// Helper: Send Web Push to specific member
+async function sendPushNotificationToMember(memberId, payload) {
+  if (!memberId) return;
+  try {
+    const [rows] = await dbPool.query('SELECT subscription FROM push_subscriptions WHERE member_id = ?', [memberId]);
+    if (rows.length > 0) {
+      const sub = typeof rows[0].subscription === 'string' ? JSON.parse(rows[0].subscription) : rows[0].subscription;
+      await webpush.sendNotification(sub, JSON.stringify(payload)).catch(err => {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          // Subscription expired or invalid, remove from DB
+          dbPool.query('DELETE FROM push_subscriptions WHERE member_id = ?', [memberId]);
+        } else {
+          console.error('Push send error:', err);
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Database error checking push subscription:', err);
+  }
+}
+
+// 9. Endpoint: Save Push Subscription
+app.post('/api/subscribe', async (req, res) => {
+  const { memberId, subscription } = req.body;
+  if (!memberId || !subscription) return res.status(400).json({ success: false, message: 'Missing data' });
+  
+  try {
+    await dbPool.query(
+      'INSERT INTO push_subscriptions (member_id, subscription) VALUES (?, ?) ON DUPLICATE KEY UPDATE subscription = VALUES(subscription)',
+      [memberId, JSON.stringify(subscription)]
+    );
+    res.json({ success: true, message: 'Push subscription saved.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

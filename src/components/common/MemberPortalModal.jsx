@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useSeettu } from '../../context/SeettuContext';
 import { formatIndianCurrency } from '../../utils/formatCurrency';
+import { subscribeToWebPush } from '../../utils/notificationService';
 import logoImg from '../../assets/logo.png';
 
 export default function MemberPortalModal({ isOpen, onClose }) {
@@ -75,6 +76,10 @@ export default function MemberPortalModal({ isOpen, onClose }) {
       setErrorMessage(res.message);
     } else {
       setSuccessMessage(`Welcome back, ${res.member.name}! Redirecting to your dashboard...`);
+      
+      // Request Push Notification Permission & Subscribe
+      subscribeToWebPush(res.member.id);
+
       setTimeout(() => {
         onClose();
         navigate('/member/dashboard');
