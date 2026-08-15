@@ -36,12 +36,12 @@ export async function sendRealChitEnrollmentEmail({ toEmail, memberName, seettuN
   }
 }
 
-export async function sendRealReminderEmail({ toEmail, memberName, seettuName, amount, dueDate, daysLeft }) {
+export async function sendRealReminderEmail({ toEmail, memberId, memberName, seettuName, amount, dueDate, daysLeft }) {
   try {
     const response = await fetch(`${API_BASE}/send-reminder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toEmail, memberName, seettuName, amount, dueDate, daysLeft })
+      body: JSON.stringify({ toEmail, memberId, memberName, seettuName, amount, dueDate, daysLeft })
     });
     return await response.json();
   } catch (error) {

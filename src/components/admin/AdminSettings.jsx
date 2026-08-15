@@ -83,6 +83,7 @@ export default function AdminSettings() {
       if (notificationSettings.enableEmailReminders) {
         await sendRealReminderEmail({
           toEmail: emailToUse,
+          memberId: item.memberId,
           memberName: item.member,
           seettuName: item.seettu,
           amount: `₹${formatIndianCurrency(item.dueAmount || item.balance || 2000)}`,
