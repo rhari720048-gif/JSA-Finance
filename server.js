@@ -500,7 +500,7 @@ app.delete('/api/payments/:id', async (req, res) => {
 
 // 6. Mark Payment as Paid in MySQL
 app.post('/api/payments/pay', async (req, res) => {
-  const { paymentId, paymentMode } = req.body;
+  const { paymentId, paymentMode, amountPaid } = req.body;
   const newReceiptNo = `JSA-RCP-${Math.floor(1000 + Math.random() * 9000)}`;
   const nowTimestamp = new Date().toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric',
@@ -514,9 +514,15 @@ app.post('/api/payments/pay', async (req, res) => {
     }
 
     const pay = rows[0];
+    const finalAmount = amountPaid !== undefined ? Number(amountPaid) : pay.due_amount;
+    const newBalance = Math.max(0, pay.due_amount - finalAmount);
+    let newStatus = 'Pending';
+    if (finalAmount >= pay.due_amount) newStatus = 'Paid';
+    else if (finalAmount > 0) newStatus = 'Partial';
+
     await dbPool.query(
-      'UPDATE payments SET paid = ?, balance = 0, status = ?, payment_date = ?, payment_method = ?, receipt_no = ? WHERE id = ?',
-      [pay.due_amount, 'Paid', nowTimestamp, paymentMode || 'UPI', newReceiptNo, paymentId]
+      'UPDATE payments SET paid = ?, balance = ?, status = ?, payment_date = ?, payment_method = ?, receipt_no = ? WHERE id = ?',
+      [finalAmount, newBalance, newStatus, nowTimestamp, paymentMode || 'UPI', newReceiptNo, paymentId]
     );
 
     // Get Member Email for Receipt
@@ -527,7 +533,7 @@ app.post('/api/payments/pay', async (req, res) => {
     transporter.sendMail({
       from: `"${COMPANY_TITLE}" <${SENDER_EMAIL}>`,
       to: memberEmail,
-      subject: `[JSA Finance] Payment Receipt #${newReceiptNo} - Paid ₹${formatIndianCurrency(pay.due_amount)}`,
+      subject: `[JSA Finance] Payment Receipt #${newReceiptNo} - Paid ₹${formatIndianCurrency(finalAmount)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #1E3A8A;">
@@ -539,7 +545,7 @@ app.post('/api/payments/pay', async (req, res) => {
               <tr><td style="padding: 8px 0; color: #64748b;">Receipt No:</td><td style="font-weight: bold; color: #1E3A8A; font-family: monospace; text-align: right;">${newReceiptNo}</td></tr>
               <tr><td style="padding: 8px 0; color: #64748b;">Member:</td><td style="font-weight: bold; color: #0f172a; text-align: right;">${pay.member_name}</td></tr>
               <tr><td style="padding: 8px 0; color: #64748b;">Scheme:</td><td style="font-weight: bold; color: #0f172a; text-align: right;">${pay.seettu_name}</td></tr>
-              <tr><td style="padding: 12px 0; font-weight: bold;">Amount Paid:</td><td style="font-weight: 900; color: #1E3A8A; font-size: 20px; text-align: right;">₹${formatIndianCurrency(pay.due_amount)}</td></tr>
+              <tr><td style="padding: 12px 0; font-weight: bold;">Amount Paid:</td><td style="font-weight: 900; color: #1E3A8A; font-size: 20px; text-align: right;">₹${formatIndianCurrency(finalAmount)}</td></tr>
             </table>
           </div>
         </div>
@@ -549,7 +555,7 @@ app.post('/api/payments/pay', async (req, res) => {
     // Send Payment Paid Push Notification
     await sendPushNotificationToMember(pay.member_id, {
       title: 'Payment Received Successfully',
-      body: `Your payment of ₹${formatIndianCurrency(pay.due_amount)} for ${pay.seettu_name} has been marked as Paid. Receipt No: ${newReceiptNo}`
+      body: `Your payment of ₹${formatIndianCurrency(finalAmount)} for ${pay.seettu_name} has been marked as ${newStatus}. Receipt No: ${newReceiptNo}`
     });
 
     return res.json({
@@ -558,9 +564,10 @@ app.post('/api/payments/pay', async (req, res) => {
       memberName: pay.member_name,
       memberEmail,
       seettuName: pay.seettu_name,
-      amount: pay.due_amount,
+      amount: finalAmount,
       date: nowTimestamp,
-      method: paymentMode || 'UPI'
+      method: paymentMode || 'UPI',
+      status: newStatus
     });
   } catch (err) {
     console.error('❌ Error updating payment in MySQL:', err);

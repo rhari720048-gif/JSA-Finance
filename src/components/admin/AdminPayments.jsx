@@ -28,19 +28,20 @@ export default function AdminPayments() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('All');
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
-  // Selected payment item for "Mark as Paid" modal
   const [payModalItem, setPayModalItem] = useState(null);
   const [paymentMode, setPaymentMode] = useState('UPI');
+  const [amountPaid, setAmountPaid] = useState('');
 
   // Edit & Delete Modal States
   const [editingPayment, setEditingPayment] = useState(null);
   const [deletingPayment, setDeletingPayment] = useState(null);
 
-  // Handle Mark as Paid Confirmation
   const confirmMarkAsPaid = () => {
     if (!payModalItem) return;
-    markPaymentAsPaid(payModalItem.id, paymentMode);
+    const finalAmount = amountPaid ? Number(amountPaid) : payModalItem.balance;
+    markPaymentAsPaid(payModalItem.id, paymentMode, finalAmount);
     setPayModalItem(null);
+    setAmountPaid('');
   };
 
   // Handle Edit Payment Submit
@@ -279,7 +280,10 @@ export default function AdminPayments() {
                     <div className="flex items-center justify-end gap-2">
                       {item.status !== 'Paid' ? (
                         <button
-                          onClick={() => setPayModalItem(item)}
+                          onClick={() => {
+                            setPayModalItem(item);
+                            setAmountPaid(item.balance || item.dueAmount);
+                          }}
                           className="btn-primary py-1.5 px-3 text-xs font-bold shadow-sm"
                         >
                           Mark as Paid
@@ -357,6 +361,18 @@ export default function AdminPayments() {
                 <span className="text-slate-500">Due Amount:</span>
                 <span className="font-extrabold text-[#1E3A8A] text-base">₹{formatIndianCurrency(payModalItem.balance)}</span>
               </div>
+            </div>
+
+            {/* Custom Paid Amount Input */}
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Amount Paid (₹)</label>
+              <input 
+                type="number"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-900 font-bold focus:border-[#1E3A8A]"
+                placeholder="Enter amount paid"
+              />
             </div>
 
             {/* Payment Mode Selection */}

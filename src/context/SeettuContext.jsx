@@ -438,7 +438,7 @@ export function SeettuProvider({ children }) {
   };
 
   // Central Payment Ledger Sync Methods + Auto Receipt & Email Notification Dispatch
-  const markPaymentAsPaid = (paymentId, paymentMode = 'UPI') => {
+  const markPaymentAsPaid = (paymentId, paymentMode = 'UPI', amountPaid = null) => {
     let targetPayment = null;
     const newReceiptNo = `JSA-RCP-${Math.floor(1000 + Math.random() * 9000)}`;
     const nowTimestamp = new Date().toLocaleString('en-IN', {
@@ -449,11 +449,17 @@ export function SeettuProvider({ children }) {
     // 1. Update Payments Ledger State
     setPaymentsList(prev => prev.map(p => {
       if (p.id === paymentId) {
+        const finalAmount = amountPaid !== null ? Number(amountPaid) : p.dueAmount;
+        const newBalance = Math.max(0, p.dueAmount - finalAmount);
+        let newStatus = "Pending";
+        if (finalAmount >= p.dueAmount) newStatus = "Paid";
+        else if (finalAmount > 0) newStatus = "Partial";
+
         targetPayment = {
           ...p,
-          paid: p.dueAmount,
-          balance: 0,
-          status: "Paid",
+          paid: finalAmount,
+          balance: newBalance,
+          status: newStatus,
           paymentDate: nowTimestamp,
           paymentMethod: paymentMode,
           receiptNo: newReceiptNo
@@ -469,7 +475,7 @@ export function SeettuProvider({ children }) {
     fetch(`${API_BASE}/payments/pay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId, paymentMode })
+      body: JSON.stringify({ paymentId, paymentMode, amountPaid: targetPayment.paid })
     }).then(() => refreshDatabaseData()).catch(err => console.error('MySQL payment pay error:', err));
 
     // Find member for email receipt dispatch
@@ -482,18 +488,18 @@ export function SeettuProvider({ children }) {
     setMembersList(prev => prev.map(m => {
       if (m.id === targetPayment.memberId || m.name.toLowerCase() === targetPayment.member.toLowerCase()) {
         const existingHistory = m.paymentHistory || [];
-        const alreadyInHistory = existingHistory.some(ph => ph.seettu.toLowerCase() === targetPayment.seettu.toLowerCase() && ph.month === targetPayment.month);
+        const hasHistory = existingHistory.some(ph => ph.seettu.toLowerCase() === targetPayment.seettu.toLowerCase() && ph.month === targetPayment.month);
 
         let updatedHistory = [];
-        if (alreadyInHistory) {
+        if (hasHistory) {
           updatedHistory = existingHistory.map(ph => {
             if (ph.seettu.toLowerCase() === targetPayment.seettu.toLowerCase()) {
               return {
                 ...ph,
-                amount: `₹${formatIndianCurrency(targetPayment.dueAmount)}`,
+                amount: `₹${formatIndianCurrency(targetPayment.paid)}`,
                 date: nowTimestamp,
                 method: paymentMode,
-                status: "Paid",
+                status: targetPayment.status,
                 receiptNo: newReceiptNo
               };
             }
@@ -504,16 +510,16 @@ export function SeettuProvider({ children }) {
             ...existingHistory,
             {
               seettu: targetPayment.seettu,
-              amount: `₹${formatIndianCurrency(targetPayment.dueAmount)}`,
+              amount: `₹${formatIndianCurrency(targetPayment.paid)}`,
               date: nowTimestamp,
               method: paymentMode,
-              status: "Paid",
+              status: targetPayment.status,
               receiptNo: newReceiptNo
             }
           ];
         }
 
-        const hasPending = updatedHistory.some(ph => ph.status === 'Pending');
+        const hasPending = updatedHistory.some(ph => ph.status === 'Pending' || ph.status === 'Partial');
 
         return {
           ...m,
@@ -527,15 +533,15 @@ export function SeettuProvider({ children }) {
     // 3. Sync to Chit Group (Seettu) Totals & Roster
     setSeettuList(prev => prev.map(s => {
       if (s.name.toLowerCase() === targetPayment.seettu.toLowerCase()) {
-        const updatedCollected = (s.collected || 0) + targetPayment.dueAmount;
-        const updatedPending = Math.max(0, (s.pending || 0) - targetPayment.dueAmount);
+        const updatedCollected = (s.collected || 0) + targetPayment.paid;
+        const updatedPending = Math.max(0, (s.pending || 0) - targetPayment.paid);
 
         const updatedRoster = (s.membersList || []).map(rm => {
           if (rm.name.toLowerCase() === targetPayment.member.toLowerCase() || rm.id === targetPayment.memberId) {
             return {
               ...rm,
-              status: "Paid",
-              paidAmount: `₹${formatIndianCurrency(targetPayment.dueAmount)}`
+              status: targetPayment.status,
+              paidAmount: `₹${formatIndianCurrency(targetPayment.paid)}`
             };
           }
           return rm;
@@ -557,10 +563,10 @@ export function SeettuProvider({ children }) {
       memberName: targetPayment.member,
       memberEmail: memberEmail,
       seettuName: targetPayment.seettu,
-      amount: targetPayment.dueAmount,
+      amount: targetPayment.paid,
       date: nowTimestamp,
       method: paymentMode,
-      status: "Paid",
+      status: targetPayment.status,
       emailSent: true
     });
 
@@ -570,7 +576,7 @@ export function SeettuProvider({ children }) {
       receiptNo: newReceiptNo,
       memberName: targetPayment.member,
       seettuName: targetPayment.seettu,
-      amount: `₹${formatIndianCurrency(targetPayment.dueAmount)}`,
+      amount: `₹${formatIndianCurrency(targetPayment.paid)}`,
       date: nowTimestamp,
       method: paymentMode
     });
